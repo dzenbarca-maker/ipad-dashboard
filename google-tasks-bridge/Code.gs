@@ -13,6 +13,17 @@ function setupTasksBridge() {
   Logger.log("Dashboard bridge key (keep private): " + key);
 }
 
+function createDashboardPairCode() {
+  var key = PropertiesService.getScriptProperties().getProperty("TASKS_BRIDGE_KEY");
+  if (!key) {
+    Logger.log("No bridge key found. Run setupTasksBridge first.");
+    return;
+  }
+  var code = Utilities.getUuid().replace(/-/g, "").substring(0, 12).toUpperCase();
+  CacheService.getScriptCache().put("dashboard_pair_" + code, key, 600);
+  Logger.log("Dashboard pair code (one use, valid for 10 minutes): " + code);
+}
+
 function authorizeTasks() {
   var response = Tasks.Tasklists.list({ maxResults: 1 });
   Logger.log("Google Tasks authorization succeeded. Lists returned: " + ((response.items || []).length));
