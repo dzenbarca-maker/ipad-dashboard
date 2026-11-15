@@ -20,6 +20,13 @@ function authorizeTasks() {
 
 function doGet(e) {
   var p = (e && e.parameter) || {};
+  if (p.action === "redeemPair") {
+    var code = String(p.code || "").toUpperCase();
+    var cache = CacheService.getScriptCache();
+    var pairedKey = cache.get("dashboard_pair_" + code);
+    if (pairedKey) cache.remove("dashboard_pair_" + code);
+    return jsonp_({ ok: !!pairedKey, key: pairedKey || "", error: pairedKey ? "" : "invalid_pair_code" }, p.callback);
+  }
   if (!isAuthorized_(p.key)) {
     return jsonp_({ ok: false, error: "unauthorized" }, p.callback);
   }
@@ -39,6 +46,9 @@ function doGet(e) {
       });
       return jsonp_({ ok: true, items: result.items || [] }, p.callback);
     }
+    if (action === "note") {
+      return jsonp_({ ok: true, note: PropertiesService.getScriptProperties().getProperty("DASHBOARD_NOTE") || "" }, p.callback);
+    }
     return jsonp_({ ok: false, error: "unknown_action" }, p.callback);
   } catch (err) {
     return jsonp_({ ok: false, error: String(err && err.message || err) }, p.callback);
@@ -50,6 +60,17 @@ function doPost(e) {
   if (!isAuthorized_(p.key)) return htmlResult_(false);
 
   try {
+    if (p.action === "createPair") {
+      var code = Utilities.getUuid().replace(/-/g, "").substring(0, 12).toUpperCase();
+      CacheService.getScriptCache().put("dashboard_pair_" + code, p.key, 600);
+      return htmlResult_(true, { pairCode: code });
+    }
+    if (p.action === "saveNote") {
+      var note = String(p.note || "");
+      if (note.length > 3500) return htmlResult_(false);
+      PropertiesService.getScriptProperties().setProperty("DASHBOARD_NOTE", note);
+      return htmlResult_(true);
+    }
     var listId = p.listId;
     var action = p.action;
     if (!listId) return htmlResult_(false);
@@ -106,8 +127,11 @@ function jsonp_(payload, callback) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
-function htmlResult_(ok) {
-  var message = JSON.stringify({ type: "dashboard-tasks-bridge", ok: !!ok });
+function htmlResult_(ok, extra) {
+  var result = { type: "dashboard-tasks-bridge", ok: !!ok };
+  extra = extra || {};
+  for (var key in extra) if (extra.hasOwnProperty(key)) result[key] = extra[key];
+  var message = JSON.stringify(result);
   var html = "<!doctype html><html><body><script>window.parent.postMessage(" + message + ", \"*\");</script></body></html>";
   return HtmlService.createHtmlOutput(html)
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
