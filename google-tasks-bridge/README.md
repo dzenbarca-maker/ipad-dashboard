@@ -24,7 +24,7 @@ This small Google Apps Script lets the static iPad dashboard read and edit Googl
 
 ## 4. Connect the dashboard
 
-On the iPad, open the dashboard and tap Подключить. Enter the /exec URL and the private key. Choose a Google Tasks list. Add, edit, complete, and delete actions then sync to that list.
+On the iPad, open the dashboard and tap Подключить. The /exec URL is already configured; enter the private key. Choose a Google Tasks list. Add, edit, complete, and delete actions then sync to that list.
 
 The URL and key are stored only in that browser's local storage. The key is not written into the public dashboard source.
 
